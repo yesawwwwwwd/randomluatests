@@ -1,0 +1,3 @@
+local compiler = loadstring(game:HttpGet("https://raw.githubusercontent.com/yesawwwwwwd/randomluatests/refs/heads/main/binaryconv.lua"))()
+
+im gonna add things later lolz
