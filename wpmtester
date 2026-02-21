@@ -1,0 +1,536 @@
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+local function new(class, props)
+	local obj = Instance.new(class)
+	if props then
+		for k,v in pairs(props) do
+			obj[k] = v
+		end
+	end
+	return obj
+end
+
+local math_random = math.random
+math.randomseed(tick() % 2147483647)
+
+local screenGui = new("ScreenGui", {Name="WPMTesterGUI", ResetOnSpawn=false, Parent=PlayerGui, ZIndexBehavior=Enum.ZIndexBehavior.Sibling})
+
+local mainFrame = new("Frame", {
+	Parent = screenGui,
+	Name = "MainFrame",
+	Size = UDim2.new(0,540,0,420),
+	Position = UDim2.new(0.5,-270,0.5,-210),
+	BackgroundColor3 = Color3.fromRGB(18,18,18),
+	BorderSizePixel = 0,
+})
+mainFrame.Active = true
+mainFrame.Draggable = true
+
+new("UICorner", {Parent = mainFrame, CornerRadius = UDim.new(0,10)})
+
+local header = new("Frame", {
+	Parent = mainFrame,
+	Size = UDim2.new(1,0,0,48),
+	Position = UDim2.new(0,0,0,0),
+	BackgroundTransparency = 1,
+})
+local headerLabel = new("TextLabel", {
+	Parent = header,
+	Size = UDim2.new(1,-72,1,0),
+	Position = UDim2.new(0,12,0,0),
+	BackgroundTransparency = 1,
+	Text = "WPM Tester - By Stummer",
+	TextColor3 = Color3.fromRGB(240,240,240),
+	Font = Enum.Font.GothamBold,
+	TextSize = 20,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	TextYAlignment = Enum.TextYAlignment.Center
+})
+local headerClose = new("TextButton", {
+	Parent = header,
+	Size = UDim2.new(0,44,0,30),
+	Position = UDim2.new(1,-56,0,9),
+	BackgroundColor3 = Color3.fromRGB(40,40,40),
+	BorderSizePixel = 0,
+	Text = "✕",
+	TextColor3 = Color3.fromRGB(255,255,255),
+	Font = Enum.Font.GothamBold,
+	TextSize = 18
+})
+new("UICorner", {Parent = headerClose, CornerRadius = UDim.new(0,6)})
+headerClose.MouseButton1Click:Connect(function() screenGui:Destroy() end)
+
+local content = new("Frame", {
+	Parent = mainFrame,
+	Size = UDim2.new(1,-24,1,-140),
+	Position = UDim2.new(0,12,0,56),
+	BackgroundTransparency = 1,
+})
+
+local scroll = new("ScrollingFrame", {
+	Parent = content,
+	Size = UDim2.new(1,0,1,0),
+	Position = UDim2.new(0,0,0,0),
+	CanvasSize = UDim2.new(0,0,0,0),
+	ScrollingDirection = Enum.ScrollingDirection.Y,
+	ScrollBarThickness = 8,
+	BackgroundTransparency = 1,
+	BorderSizePixel = 0
+})
+scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+local bigLabel = new("TextLabel", {
+	Parent = scroll,
+	Size = UDim2.new(1, -10, 0, 48),
+	Position = UDim2.new(0, 5, 0, 6),
+	BackgroundTransparency = 1,
+	Text = "",
+	Font = Enum.Font.GothamBold,
+	TextSize = 26,
+	TextWrapped = true,
+	TextColor3 = Color3.fromRGB(220,220,220),
+	RichText = true,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	TextYAlignment = Enum.TextYAlignment.Top,
+})
+bigLabel:GetPropertyChangedSignal("TextBounds"):Connect(function()
+	local h = math.max(48, bigLabel.TextBounds.Y + 12)
+	bigLabel.Size = UDim2.new(1, -10, 0, h)
+
+	if inputBox and inputBox.Parent == scroll then
+		inputBox.Size = bigLabel.Size
+		inputBox.Position = bigLabel.Position
+	end
+	scroll.CanvasSize = UDim2.new(0, 0, 0, h + 18)
+end)
+
+local bottomBar = new("Frame", {
+	Parent = mainFrame,
+	Size = UDim2.new(1,-24,0,72),
+	Position = UDim2.new(0,12,1,-84),
+	BackgroundTransparency = 1
+})
+
+local inputBox = new("TextBox", {
+	Parent = scroll, 
+	Size = bigLabel.Size,
+	Position = bigLabel.Position,
+	BackgroundColor3 = Color3.fromRGB(30,30,30),
+	Text = "",
+	Font = Enum.Font.Gotham,
+	TextSize = 20,
+	TextColor3 = Color3.fromRGB(255,255,255),
+	PlaceholderText = "Type here...",
+	ClearTextOnFocus = false,
+	BorderSizePixel = 0,
+})
+inputBox.BackgroundTransparency = 1 
+inputBox.PlaceholderColor3 = Color3.fromRGB(150,150,150)
+inputBox.TextEditable = true
+inputBox.ZIndex = bigLabel.ZIndex + 1 
+
+local controls = new("Frame", {
+	Parent = bottomBar,
+	Size = UDim2.new(0.26,0,1,0),
+	Position = UDim2.new(0.74,8,0,0),
+	BackgroundTransparency = 1
+})
+
+local modeButton = new("TextButton", {
+	Parent = controls,
+	Size = UDim2.new(1,0,0,34),
+	Position = UDim2.new(0,0,0,0),
+	BackgroundColor3 = Color3.fromRGB(44,44,44),
+	Text = "Select Mode",
+	TextColor3 = Color3.fromRGB(255,255,255),
+	Font = Enum.Font.GothamBold,
+	TextSize = 14,
+	BorderSizePixel = 0
+})
+new("UICorner", {Parent = modeButton, CornerRadius = UDim.new(0,6)})
+
+local resetBtn = new("TextButton", {
+	Parent = controls,
+	Size = UDim2.new(1,0,0,34),
+	Position = UDim2.new(0,0,0,38),
+	BackgroundColor3 = Color3.fromRGB(44,44,44),
+	Text = "Reset",
+	TextColor3 = Color3.fromRGB(255,255,255),
+	Font = Enum.Font.Gotham,
+	TextSize = 14,
+	BorderSizePixel = 0
+})
+new("UICorner", {Parent = resetBtn, CornerRadius = UDim.new(0,6)})
+
+local dropdown = new("Frame", {
+	Parent = mainFrame,
+	Size = UDim2.new(0,220,0,0),
+	Position = UDim2.new(1,-240,0,56),
+	BackgroundColor3 = Color3.fromRGB(28,28,28),
+	BorderSizePixel = 0,
+	ClipsDescendants = true
+})
+new("UICorner", {Parent = dropdown, CornerRadius = UDim.new(0,8)})
+local list = new("UIListLayout", {Parent = dropdown, Padding = UDim.new(0,6), FillDirection = Enum.FillDirection.Vertical})
+list.HorizontalAlignment = Enum.HorizontalAlignment.Center
+list.SortOrder = Enum.SortOrder.LayoutOrder
+
+local infoBar = new("Frame", {
+	Parent = mainFrame,
+	Size = UDim2.new(1,-24,0,36),
+	Position = UDim2.new(0,12,1,-120),
+	BackgroundTransparency = 1
+})
+local timerLabel = new("TextLabel", {
+	Parent = infoBar,
+	Size = UDim2.new(0.6,0,1,0),
+	Position = UDim2.new(0,0,0,0),
+	BackgroundTransparency = 1,
+	Text = "Time: 00:00.000",
+	TextXAlignment = Enum.TextXAlignment.Left,
+	TextColor3 = Color3.fromRGB(200,200,200),
+	Font = Enum.Font.Gotham,
+	TextSize = 16
+})
+local wpmLabel = new("TextLabel", {
+	Parent = infoBar,
+	Size = UDim2.new(0.4,0,1,0),
+	Position = UDim2.new(0.6,4,0,0),
+	BackgroundTransparency = 1,
+	Text = "WPM: 0.00 | Acc: 0.00%",
+	TextXAlignment = Enum.TextXAlignment.Right,
+	TextColor3 = Color3.fromRGB(200,200,200),
+	Font = Enum.Font.GothamBold,
+	TextSize = 16
+})
+
+local resultLabel = new("TextLabel", {
+	Parent = mainFrame,
+	Size = UDim2.new(1,-24,0,24),
+	Position = UDim2.new(0,12,1,-36),
+	BackgroundTransparency = 1,
+	Text = "",
+	TextColor3 = Color3.fromRGB(200,200,200),
+	Font = Enum.Font.GothamBold,
+	TextSize = 14,
+	TextXAlignment = Enum.TextXAlignment.Left
+})
+
+local modes = {
+	Easy = {name = "Easy - Casual Typer", count = 15, pool = {}},
+	Medium = {name = "Medium - More Tryhard", count = 20, pool = {}},
+	Hard = {name = "Hard - Fast Hand", count = 25, pool = {}},
+	Extreme = {name = "Extreme - Profesional", count = 30, pool = {}},
+	Stenographer = {name = "Stenographer - Impossible using normal keyboard", count = 35, pool = {}},
+}
+
+local easyPools = {
+"Mother","Father","Sister","Brother","Child","River","Mountain","Forest","Flower","Animal","Teacher","Student","Book","Pen","Class",
+"Sun","Moon","Star","Sky","Cloud","Rain","Wind","Earth","Water","Fire","Tree","Grass","Bird","Fish","Dog","Cat","Home",
+"Run","Jump","Walk","Talk","See","Hear","Eat","Drink","Sleep","Wake","Think","Feel","Happy","Sad","Love","Friend",
+"Door","Window","Chair","Table","Bed","Lamp","Clock","Phone","Key","Bag","Shoe","Hat","Coat","Hand","Foot","Face","Eye",
+"Red","Blue","Green","Yellow","Black","White","Big","Small","Fast","Slow","Hot","Cold","High","Low","New","Old",
+"Car","Bus","Bike","Road","Street","City","Town","House","School","Park","Shop","Food","Drink","Time","Day","Night",
+"One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Hundred","Thousand","First","Second","Third",
+"Read","Write","Draw","Paint","Sing","Dance","Play","Game","Sport","Ball","Music","Song","Film","TV","Book","Page",
+"Apple","Bread","Rice","Milk","Egg","Meat","Cake","Coffee","Tea","Salt","Sugar","Water","Juice","Fruit","Vegetable",
+"Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday","January","February","March","April",
+"Doctor","Nurse","Hospital","Medicine","Health","Sick","Pain","Fever","Cough","Cold","Headache","Tooth","Heart",
+"King","Queen","Prince","Princess","Knight","Castle","Sword","Shield","Horse","Dragon","Treasure","Magic","Gold",
+"Computer","Mouse","Keyboard","Screen","Phone","Internet","Email","Website","Data","File","Program","Code",
+"Winter","Spring","Summer","Autumn","Snow","Ice","Frost","Sun","Rain","Leaf","Flower","Bloom","Seed","Grow",
+"Sea","Beach","Sand","Wave","Boat","Ship","Fish","Shell","Swim","Tide","Coral","Island","Ocean","Coast",
+"North","South","East","West","Map","World","Country","Flag","Language","Travel","Plane","Ticket","Hotel",
+"Morning","Afternoon","Evening","Midnight","Dawn","Dusk","Noon","Today","Tomorrow","Yesterday","Week","Month",
+"Pen","Pencil","Paper","Eraser","Ruler","Sharpener","Bag","Book","Notebook","Test","Grade","Lesson","Homework",
+"Baby","Girl","Boy","Man","Woman","Family","Grandfather","Grandmother","Aunt","Uncle","Cousin","Parents","Home"
+}
+
+local midPools = {
+"creative","deadline","developer","algorithm","framework","variable","function","database","interface","network",
+"package","module","compile","execute","template","optimize","iterate","synchronize","parallel","concurrent",
+"migration","authentication","authorization","encryption","compression","serialization","deserialization",
+"encapsulation","polymorphism","inheritance","abstraction","architecture","deployment","containerization",
+"virtualization","benchmark","profiling","integration","automation","orchestration","scalability","redundancy"
+}
+
+local hardPools = {
+"synchronization","characterization","infrastructure","specification","microarchitecture","misconfiguration",
+"decentralization","cryptanalysis","transformation","authentication","reconciliation","multithreading",
+"decomposition","internationalization","modularization","backpropagation","differentiation","optimization",
+"regularization","vectorization","serialization","containerization","parallelization","virtualization",
+"interoperability","instrumentation","suboptimization","refactoring","consolidation","heterogeneous"
+}
+
+local extremePools = {
+"characteristically","electroencephalogram","counterintuitively","uncharacteristically",
+"photosynthesizing","thermodynamically","hyperconnectivity","neurotransmission",
+"incompatibilities","misinterpretations","reconfigurations","overengineering",
+"transcendentalism","bioluminescence","microarchitectural","heterogeneousness",
+"telecommunication","decentralizationist","institutionalization","miscommunication",
+"counterproductive","reconstructional","interdisciplinary","infrastructural"
+}
+
+local stenoPools = {
+"floccinaucinihilipilification","pseudopseudohypoparathyroidism","antidisestablishmentarianism",
+"psychoneuroendocrinological","thyroparathyroidectomized","hepaticocholangiocholecystenterostomies",
+"radioimmunoelectrophoresis","spectrophotofluorometrically","incomprehensibilities",
+"psychophysicotherapeutic","electroencephalographically","otorhinolaryngological",
+"psychoneuroendocrinology","ultramicroscopically","immunohistochemically",
+"dermatoglyphically","counterrevolutionaries","electrocardiographically"
+}
+
+modes.Easy.pool = easyPools
+modes.Medium.pool = {}
+for _,v in pairs(easyPools) do table.insert(modes.Medium.pool, v) end
+for _,v in pairs(midPools) do table.insert(modes.Medium.pool, v) end
+modes.Hard.pool = {}
+for _,v in pairs(hardPools) do table.insert(modes.Hard.pool, v) end
+for _,v in pairs(midPools) do table.insert(modes.Hard.pool, v) end
+modes.Extreme.pool = {}
+for _,v in pairs(extremePools) do table.insert(modes.Extreme.pool, v) end
+for _,v in pairs(hardPools) do table.insert(modes.Extreme.pool, v) end
+modes.Stenographer.pool = {}
+for _,v in pairs(stenoPools) do table.insert(modes.Stenographer.pool, v) end
+for _,v in pairs(extremePools) do table.insert(modes.Stenographer.pool, v) end
+
+local currentModeKey = "Easy"
+modeButton.Text = modes.Easy.name
+
+local function shuffle(t)
+	for i = #t, 2, -1 do
+		local j = math_random(i)
+		t[i], t[j] = t[j], t[i]
+	end
+end
+
+local function pickWords(pool, count)
+	local tmp = {}
+	for _,w in pairs(pool) do tmp[#tmp+1] = w end
+	shuffle(tmp)
+	local out = {}
+	for i=1, math.min(count, #tmp) do out[#out+1] = tmp[i] end
+	return out
+end
+
+local function safeEscape(ch)
+	if ch == "&" then return "&amp;" end
+	if ch == "<" then return "&lt;" end
+	if ch == ">" then return "&gt;" end
+	return ch
+end
+
+local function colorizeTargetAndTyped(fullText, typed)
+	typed = typed or ""
+	local result = {}
+	local fullLen = #fullText
+	local typedLen = #typed
+	for i = 1, fullLen do
+		local ch = string.sub(fullText, i, i)
+		local safe = safeEscape(ch)
+		if i <= typedLen then
+			local tch = string.sub(typed, i, i)
+			if tch == ch then
+				result[#result+1] = '<font color="#5cff81">'..safe..'</font>'
+			else
+				result[#result+1] = '<font color="#ff7a7a">'..safe..'</font>'
+			end
+		else
+			result[#result+1] = '<font color="#cfcfcf">'..safe..'</font>'
+		end
+	end
+	return table.concat(result)
+end
+
+local sequence = {}
+local sequenceText = ""
+local startTime = nil
+local finished = false
+local lastTyped = ""
+local correctCharsAtEnd = 0
+
+local function buildSequence(modeKey)
+	local cfg = modes[modeKey]
+	local picked = pickWords(cfg.pool, cfg.count)
+	sequence = picked
+	sequenceText = table.concat(picked, " ")
+end
+
+local function resetTest(keepMode)
+	startTime = nil
+	finished = false
+	lastTyped = ""
+	correctCharsAtEnd = 0
+	inputBox.Text = ""
+	timerLabel.Text = "Time: 00:00.000"
+	wpmLabel.Text = "WPM: 0.00 | Acc: 0.00%"
+	resultLabel.Text = ""
+	if not keepMode then
+		buildSequence(currentModeKey)
+	end
+	bigLabel.RichText = true
+	bigLabel.Text = colorizeTargetAndTyped(sequenceText, "")
+
+	inputBox.Size = bigLabel.Size
+	inputBox.Position = bigLabel.Position
+end
+
+local function computeStats(full, typed)
+	local total = #full
+	local typedLen = #typed
+	local correct = 0
+	for i=1, math.min(total, typedLen) do
+		if string.sub(full, i, i) == string.sub(typed, i, i) then
+			correct = correct + 1
+		end
+	end
+	return correct, typedLen - correct, total
+end
+
+local function formatTime(secs)
+	local ms = math.floor((secs - math.floor(secs)) * 1000)
+	local s = math.floor(secs % 60)
+	local m = math.floor(secs / 60)
+	return string.format("%02d:%02d.%03d", m, s, ms)
+end
+
+local function updateRealtime()
+	if not startTime or finished then return end
+	local now = tick() - startTime
+	timerLabel.Text = "Time: " .. formatTime(now)
+	local correct, incorrect, total = computeStats(sequenceText, inputBox.Text)
+	local minutes = math.max(now / 60, 1/60000)
+	local wpm = (correct / 5) / minutes
+	local acc = (correct / math.max(#inputBox.Text,1)) * 100
+	wpmLabel.Text = string.format("WPM: %.2f | Acc: %.2f%%", wpm, acc)
+end
+
+local function finishTest()
+	if finished then return end
+	finished = true
+	local totalTime = tick() - (startTime or tick())
+	local correct, incorrect, total = computeStats(sequenceText, inputBox.Text)
+	local finalWPM = (correct / 5) / math.max((totalTime / 60), 1/60000)
+	local finalAcc = (correct / math.max(#inputBox.Text,1)) * 100
+	timerLabel.Text = "Time: " .. formatTime(totalTime)
+	wpmLabel.Text = string.format("WPM: %.2f | Acc: %.2f%%", finalWPM, finalAcc)
+	resultLabel.Text = string.format("Finished • Time: %s • WPM: %.2f • Accuracy: %.2f%% • CorrectChars: %d/%d", formatTime(totalTime), finalWPM, finalAcc, correct, total)
+	correctCharsAtEnd = correct
+end
+
+inputBox:GetPropertyChangedSignal("Text"):Connect(function()
+	if finished then return end
+	if not sequenceText or sequenceText == "" then return end
+	if startTime == nil and #inputBox.Text > 0 then
+		startTime = tick()
+	end
+	if #inputBox.Text > #sequenceText then
+		inputBox.Text = string.sub(inputBox.Text, 1, #sequenceText)
+	end
+	bigLabel.Text = colorizeTargetAndTyped(sequenceText, inputBox.Text)
+	local correct, incorrect, total = computeStats(sequenceText, inputBox.Text)
+	if #inputBox.Text >= #sequenceText then
+		finishTest()
+	end
+end)
+
+RunService.Heartbeat:Connect(function()
+	updateRealtime()
+end)
+
+modeButton.MouseButton1Click:Connect(function()
+	if dropdown.Size.Y.Offset == 0 then
+		local count = 0
+		for _ in pairs(modes) do count = count + 1 end
+		local h = math.clamp(count * 38 + 12, 0, 240)
+		dropdown:TweenSize(UDim2.new(0,220,0,h), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.18, true)
+	else
+		dropdown:TweenSize(UDim2.new(0,220,0,0), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.12, true)
+	end
+end)
+
+local function createModeButton(key, def)
+	local b = new("TextButton", {
+		Parent = dropdown,
+		Size = UDim2.new(1,-12,0,32),
+		BackgroundColor3 = Color3.fromRGB(36,36,36),
+		BorderSizePixel = 0,
+		Text = def.name,
+		TextColor3 = Color3.fromRGB(255,255,255),
+		Font = Enum.Font.Gotham,
+		TextSize = 14
+	})
+	new("UICorner", {Parent = b, CornerRadius = UDim.new(0,6)})
+	b.MouseButton1Click:Connect(function()
+		currentModeKey = key
+		modeButton.Text = def.name
+		dropdown:TweenSize(UDim2.new(0,220,0,0), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.12, true)
+		buildSequence(key)
+		resetTest(true)
+	end)
+end
+
+for k,v in pairs(modes) do
+	createModeButton(k,v)
+end
+
+resetBtn.MouseButton1Click:Connect(function()
+	resetTest(true)
+end)
+
+local function startNext()
+	buildSequence(currentModeKey)
+	resetTest(true)
+end
+
+local function initialSetup()
+	buildSequence(currentModeKey)
+	resetTest(true)
+end
+
+initialSetup()
+
+headerLabel.Text = "WPM Tester - By Stummer"
+
+inputBox.Focused:Connect(function()
+	local h = mainFrame.AbsoluteSize.Y
+	local screenH = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize.Y or 720
+	if UserInputService.TouchEnabled then
+		local newY = math.clamp(0.12 * screenH, 0, screenH/2)
+		mainFrame.Position = UDim2.new(0.5, -mainFrame.Size.X.Offset/2, 0, 36)
+		wait(0.08)
+		scroll.CanvasPosition = Vector2.new(0, math.max(0, bigLabel.AbsoluteSize.Y - (mainFrame.AbsoluteSize.Y * 0.45)))
+	end
+end)
+
+inputBox.FocusLost:Connect(function(enter)
+	if enter then
+		if not finished and #inputBox.Text >= #sequenceText then
+			finishTest()
+		end
+	end
+	if UserInputService.TouchEnabled then
+		mainFrame.Position = UDim2.new(0.5,-mainFrame.Size.X.Offset/2,0.5,-210)
+	end
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if input.KeyCode == Enum.KeyCode.Return then
+		if finished then
+			startNext()
+		else
+			if #inputBox.Text >= #sequenceText then
+				finishTest()
+			end
+		end
+	end
+end)
+
+headerClose.MouseButton1Click:Connect(function()
+	screenGui:Destroy()
+end)
